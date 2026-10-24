@@ -7,6 +7,8 @@ import { normalizarPreferencia, type PreferenciaModalidades } from "@/lib/modali
 import type { Chamado, SolicitacaoPrivacidade, Usuario } from "@/lib/domain/types";
 import type { Tema } from "@/lib/localizacao";
 import { erroFicha, montarFicha, type DadosFicha } from "@/lib/fichaEmergencia";
+import { IDADE_MINIMA, idadeEmAnos, somenteDigitos, telefoneValido } from "@/lib/domain/validators";
+import { NOMES_UF } from "@/lib/localizacao";
 
 const agoraIso = () => new Date().toISOString();
 
@@ -121,6 +123,74 @@ export function definirTema(usuario: Usuario, tema: Tema): void {
 
 export function salvarPreferenciaModalidades(usuario: Usuario, p: PreferenciaModalidades): void {
   usuario.preferenciasModalidade = normalizarPreferencia(p);
+}
+
+// ---------- Dados da conta ----------
+/** O que a própria pessoa pode alterar. CPF, e-mail e aceite dos termos ficam de fora. */
+export interface DadosConta {
+  nomeCompleto: string;
+  dataNascimento: string;
+  whatsapp: string;
+  cep: string;
+  logradouro: string;
+  numero: string;
+  complemento?: string | undefined;
+  bairro: string;
+  cidade: string;
+  uf: string;
+  instagram?: string | undefined;
+  squad?: string | undefined;
+}
+
+const DATA_CIVIL = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Atualiza os dados da própria conta com as mesmas regras do cadastro. Mudar a data de
+ * nascimento recalcula a autorização do responsável (menor de 18 volta a "pendente", salvo
+ * se já aprovada) e uma conta que passa a ser de menor fica com o perfil da comunidade privado.
+ */
+export function atualizarDadosConta(usuario: Usuario, d: DadosConta): void {
+  const nome = d.nomeCompleto.trim().replace(/\s+/g, " ");
+  if (!nome) throw new ErroDominio("nome", "Informe o nome completo.");
+  if (!DATA_CIVIL.test(d.dataNascimento) || Number.isNaN(Date.parse(`${d.dataNascimento}T00:00:00Z`))) {
+    throw new ErroDominio("nascimento", "Informe uma data de nascimento válida.");
+  }
+  const idade = idadeEmAnos(d.dataNascimento);
+  if (idade < IDADE_MINIMA) throw new ErroDominio("idade", `É necessário ter ao menos ${IDADE_MINIMA} anos.`);
+  if (idade > 120) throw new ErroDominio("nascimento", "Informe uma data de nascimento válida.");
+  const whatsapp = somenteDigitos(d.whatsapp);
+  if (!telefoneValido(whatsapp)) throw new ErroDominio("telefone", "Telefone/WhatsApp inválido.");
+  const cep = somenteDigitos(d.cep);
+  if (cep.length !== 8) throw new ErroDominio("cep", "Informe um CEP válido.");
+  const uf = d.uf.trim().toUpperCase();
+  if (!NOMES_UF[uf]) throw new ErroDominio("uf", "Selecione o estado.");
+  const obrigatorios = { logradouro: d.logradouro, numero: d.numero, bairro: d.bairro, cidade: d.cidade };
+  if (Object.values(obrigatorios).some((v) => !v.trim())) {
+    throw new ErroDominio("endereco", "Preencha logradouro, número, bairro e cidade.");
+  }
+
+  usuario.nomeCompleto = nome;
+  usuario.whatsapp = whatsapp;
+  usuario.endereco = {
+    cep,
+    logradouro: d.logradouro.trim(),
+    numero: d.numero.trim(),
+    complemento: d.complemento?.trim() || undefined,
+    bairro: d.bairro.trim(),
+    cidade: d.cidade.trim(),
+    uf,
+  };
+  usuario.instagram = d.instagram?.trim() || undefined;
+  usuario.squad = d.squad?.trim() || undefined;
+  if (usuario.dataNascimento !== d.dataNascimento) {
+    usuario.dataNascimento = d.dataNascimento;
+    if (idade < 18) {
+      if (usuario.autorizacaoResponsavel !== "aprovada") usuario.autorizacaoResponsavel = "pendente";
+      usuario.comunidadePrivada = true;
+    } else {
+      usuario.autorizacaoResponsavel = "nao_aplicavel";
+    }
+  }
 }
 
 // ---------- Ficha de emergência ----------

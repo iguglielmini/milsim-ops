@@ -18,7 +18,9 @@ const ROTULOS: Record<Aba, string> = { perfil: "Meu perfil", emergencia: "Ficha 
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { formatarDataBR } from "@/lib/domain/money";
-import { mascararCpf, mascararTelefone } from "@/lib/domain/validators";
+import { mascaraCep, mascararCpf, mascararTelefone } from "@/lib/domain/validators";
+import { EditarDadosConta } from "@/components/perfil/EditarDadosConta";
+import { Pencil } from "lucide-react";
 import { NomeExibicaoForm } from "@/components/NomeExibicaoForm";
 import { FotoPerfil } from "@/components/FotoPerfil";
 import { useEffect } from "react";
@@ -125,22 +127,29 @@ function GestaoPerfil({ aba, usuarioId }: { aba: Exclude<Aba, "perfil">; usuario
 function DadosConta() {
   const { usuario } = useAuth();
   const { tema, definirTema } = useTheme();
+  const [editando, setEditando] = useState(false);
   if (!usuario) return null;
   const [a, m, d] = usuario.dataNascimento.split("-");
+  const end = usuario.endereco;
   return (
     <div className="space-y-4">
       <Card>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-display text-lg font-semibold uppercase">Meus dados</h2>
+          <Button variant="outline" onClick={() => setEditando(true)}><Pencil className="h-4 w-4" aria-hidden="true" /> Editar dados</Button>
+        </div>
         <dl className="grid gap-3 text-sm sm:grid-cols-2">
           <div><dt className="text-muted-foreground">Nome</dt><dd>{usuario.nomeCompleto}</dd></div>
           <div><dt className="text-muted-foreground">E-mail</dt><dd>{usuario.email}</dd></div>
           <div><dt className="text-muted-foreground">CPF</dt><dd>{mascararCpf(usuario.cpf)}</dd></div>
           <div><dt className="text-muted-foreground">Nascimento</dt><dd>{`${d}/${m}/${a}`}</dd></div>
           <div><dt className="text-muted-foreground">WhatsApp</dt><dd>{mascararTelefone(usuario.whatsapp)}</dd></div>
-          <div><dt className="text-muted-foreground">Cidade</dt><dd>{usuario.endereco.cidade}/{usuario.endereco.uf}</dd></div>
+          <div className="sm:col-span-2"><dt className="text-muted-foreground">Endereço</dt><dd>{end.logradouro}, {end.numero}{end.complemento ? ` — ${end.complemento}` : ""} · {end.bairro} · {end.cidade}/{end.uf} · CEP {mascaraCep(end.cep)}</dd></div>
           {usuario.squad && <div><dt className="text-muted-foreground">Squad</dt><dd>{usuario.squad}</dd></div>}
           {usuario.instagram && <div><dt className="text-muted-foreground">Instagram</dt><dd>{usuario.instagram}</dd></div>}
           <div><dt className="text-muted-foreground">Aceite dos termos</dt><dd>{usuario.aceiteTermosVersao} em {formatarDataBR(usuario.aceiteTermosEm)}</dd></div>
         </dl>
+        {editando && <EditarDadosConta usuario={usuario} aberto onFechar={() => setEditando(false)} />}
       </Card>
       <Card>
         <h2 className="font-display text-lg font-semibold uppercase">Foto</h2>
