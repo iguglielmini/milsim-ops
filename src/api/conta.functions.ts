@@ -7,7 +7,7 @@ import { exigirUsuario, mutar } from "@/server/unidade.server";
 import { chamar } from "@/api/cliente";
 import type { PreferenciaModalidades } from "@/lib/modalidades";
 import type { SolicitacaoPrivacidade } from "@/lib/domain/types";
-import type { DadosChamado } from "@/services/conta";
+import type { DadosChamado, DadosConta } from "@/services/conta";
 import type { Tema } from "@/lib/localizacao";
 import { esquemaFicha, type DadosFicha } from "@/lib/fichaEmergencia";
 
@@ -62,7 +62,19 @@ export const salvarFichaEmergenciaFn = createServerFn({ method: "POST" })
   .validator(esquemaFicha.parse)
   .handler(({ data }) => mutar(({ usuario }) => conta.salvarFichaEmergencia(exigirUsuario(usuario), data)));
 
+/** Dados da própria conta (CPF e e-mail não mudam por aqui). */
+const texto = (max: number) => z.string().max(max);
+export const atualizarDadosContaFn = createServerFn({ method: "POST" })
+  .validator(z.object({
+    nomeCompleto: texto(150), dataNascimento: texto(10), whatsapp: texto(20),
+    cep: texto(9), logradouro: texto(150), numero: texto(20), complemento: texto(100).optional(),
+    bairro: texto(100), cidade: texto(100), uf: texto(2),
+    instagram: texto(60).optional(), squad: texto(80).optional(),
+  }).strict().parse)
+  .handler(({ data }) => mutar(({ usuario }) => conta.atualizarDadosConta(exigirUsuario(usuario), data)));
+
 // ---------- Uso no navegador ----------
+export const atualizarDadosConta = (dados: DadosConta) => chamar(atualizarDadosContaFn({ data: dados }));
 export const enviarEntregaMissao = (missaoId: string, texto?: string) => chamar(enviarEntregaMissaoFn({ data: { missaoId, texto } }));
 export const solicitarPrivacidade = (tipo: SolicitacaoPrivacidade["tipo"], detalhes: string) =>
   chamar(solicitarPrivacidadeFn({ data: { tipo, detalhes } }));

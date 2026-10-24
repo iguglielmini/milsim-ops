@@ -62,6 +62,10 @@ Código: `src/services/auth.ts`, `src/server/auth.server.ts`, `src/lib/domain/va
 - **Idade mínima: 15 anos.** De 15 a 17 anos a conta nasce com `autorizacaoResponsavel = pendente`
   e **não pode se inscrever** até o admin aprovar. → [`aprovarAutorizacaoResponsavel`](api/admin/aprovarAutorizacaoResponsavel.md)
 - **CPF e e-mail são únicos.** Se o perfil não puder ser gravado, a conta criada no Auth é apagada.
+- **Editar os próprios dados** (Meu perfil › Editar dados): nome, nascimento, WhatsApp, endereço, Instagram e squad,
+  com as mesmas validações do cadastro. **CPF, e-mail e aceite dos termos não mudam** (correção pelo suporte). Mudar o
+  nascimento recalcula a autorização do responsável (menor de 18 → `pendente`, salvo se já aprovada, e comunidade
+  privada; 18+ → `nao_aplicavel`). → [`atualizarDadosConta`](api/conta/atualizarDadosConta.md)
 - **Confirmação de e-mail obrigatória** para contas novas (`src/lib/confirmacaoEmail.ts`): o cadastro cria a conta e
   envia um link (modelo `supabase/templates/confirmar-email.html`, link por `token_hash`, vale 1 hora e em qualquer
   aparelho). Até abrir o link a pessoa não entra ("Confirme seu e-mail para entrar…") e pode pedir outro e-mail

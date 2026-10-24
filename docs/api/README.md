@@ -123,6 +123,7 @@ Missões, privacidade, notificações, foto, tema e preferências. Arquivo: [`sr
 | API | Método | Acesso | O que faz |
 |---|---|---|---|
 | [`enviarEntregaMissao`](conta/enviarEntregaMissao.md) | POST | Qualquer pessoa autenticada e ativa | Envia a entrega de uma missão de texto ou confirmação (mantida por compatibilidade). |
+| [`atualizarDadosConta`](conta/atualizarDadosConta.md) | POST | Qualquer pessoa autenticada e ativa (só a própria conta) | Atualiza nome, nascimento, WhatsApp, endereço, Instagram e squad (CPF e e-mail não mudam). |
 | [`solicitarPrivacidade`](conta/solicitarPrivacidade.md) | POST | Qualquer pessoa autenticada e ativa | Abre uma solicitação de privacidade (LGPD) para a administração. |
 | [`abrirChamado`](conta/abrirChamado.md) (legada) | POST | Qualquer pessoa autenticada e ativa | Legada. |
 | [`responderChamado`](conta/responderChamado.md) (legada) | POST | Qualquer pessoa autenticada e ativa | Legada. |
